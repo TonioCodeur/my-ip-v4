@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:test": "tsx scripts/test-db-connection.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",
@@ -32,6 +33,7 @@
     "eslint-config-next": "15.5.0",
     "prisma": "^6.14.0",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "tw-animate-css": "^1.3.7",
     "typescript": "^5"
   }
