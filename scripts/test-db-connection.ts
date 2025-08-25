@@ -1,10 +1,25 @@
-import { PrismaClient } from '../src/generated/prisma'
+// Import dynamique pour éviter les erreurs de compilation
+let PrismaClient: any
 
-const prisma = new PrismaClient()
+async function initPrisma() {
+  try {
+    const prismaModule = await import('../src/generated/prisma')
+    PrismaClient = prismaModule.PrismaClient
+    return new PrismaClient()
+  } catch (error) {
+    console.error('❌ Failed to import PrismaClient:', error)
+    process.exit(1)
+  }
+}
+
+let prisma: any
 
 async function testDatabaseConnection() {
   try {
     console.log('🔌 Testing database connection...')
+    
+    // Initialize Prisma client
+    prisma = await initPrisma()
     
     // Test the connection with a simple query
     await prisma.$connect()
@@ -23,7 +38,7 @@ async function testDatabaseConnection() {
       console.error('Error message:', error.message)
       
       // Check if Prisma client needs to be generated
-      if (error.message.includes('Cannot find module') && error.message.includes('generated/prisma')) {
+      if (error.message.includes('Cannot find module') && error.message.includes('@prisma/client')) {
         console.error('\n💡 Prisma client not generated:')
         console.error('  - Run: pnpm prisma generate')
         console.error('  - Then try again: pnpm db:test')

@@ -1,5 +1,5 @@
-import { getI18n } from '../../../locales/server';
 import { setStaticParamsLocale } from 'next-international/server';
+import { getI18n } from '../../../locales/server';
 
 export default async function Home({
   params,
