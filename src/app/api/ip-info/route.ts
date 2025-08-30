@@ -1,33 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface IpApiResponse {
+  status: string;
+  country: string;
+  countryCode: string;
+  region: string;
+  regionName: string;
+  city: string;
+  zip: string;
+  lat: number;
+  lon: number;
+  timezone: string;
+  isp: string;
+  org: string;
+  as: string;
+  query: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    // Récupérer l'IP depuis les query params ou utiliser celle de la requête
+    // Récupérer l'IP depuis les paramètres de requête ou utiliser l'IP du client
     const searchParams = request.nextUrl.searchParams;
-    const ip = searchParams.get('ip');
+    const ipParam = searchParams.get('ip');
     
-    // Construire l'URL de l'API IP-API
-    const apiUrl = ip 
-      ? `http://ip-api.com/json/${ip}`
-      : 'http://ip-api.com/json/';
+    // Si pas d'IP fournie, essayer de récupérer l'IP du client
+    let ip = ipParam;
     
-    // Faire la requête côté serveur (pas de problème CORS)
-    const response = await fetch(apiUrl);
+    if (!ip) {
+      // Essayer différentes méthodes pour obtenir l'IP du client
+      ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+           request.headers.get('x-real-ip') ||
+           request.headers.get('x-remote-addr') ||
+           null;
+    }
     
-    if (!response.ok) {
+    // En développement, utiliser une IP de test si aucune IP n'est trouvée
+    if (!ip && process.env.NODE_ENV === 'development') {
+      ip = '8.8.8.8'; // IP de Google DNS pour les tests
+    }
+    
+    if (!ip) {
       return NextResponse.json(
-        { error: 'Erreur lors de la récupération des informations IP' },
-        { status: response.status }
+        { error: 'Impossible de déterminer l\'adresse IP' },
+        { status: 400 }
       );
     }
     
-    const data = await response.json();
+    // Appeler l'API IP-API.com
+    const apiUrl = `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`;
+    
+    const response = await fetch(apiUrl, {
+      next: { revalidate: 3600 }, // Cache pour 1 heure
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Erreur de l'API IP-API: ${response.statusText}`);
+    }
+    
+    const data: IpApiResponse = await response.json();
+    
+    // Vérifier le statut de la réponse
+    if (data.status === 'fail') {
+      return NextResponse.json(
+        { error: 'Impossible de récupérer les informations pour cette IP' },
+        { status: 400 }
+      );
+    }
     
     return NextResponse.json(data);
+    
   } catch (error) {
-    console.error('Erreur API IP-Info:', error);
+    console.error('Erreur lors de la récupération des informations IP:', error);
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { error: 'Erreur serveur lors de la récupération des informations IP' },
       { status: 500 }
     );
   }

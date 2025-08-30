@@ -1,7 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, MapPin, Globe, Network, Wifi, Building2, Clock } from 'lucide-react';
+import { Loader2, MapPin, Globe, Network, Wifi, Building2, Clock, RefreshCw, Shield, Server, Hash } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useIpHistory } from './ip-history';
 
 interface IpApiResponse {
   status: string;
@@ -36,12 +38,28 @@ async function fetchIpInfo(ip: string | null): Promise<IpApiResponse> {
 }
 
 export function IpInfo({ ip }: { ip: string | null }) {
-  const { data, isLoading, error } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { addToHistory } = useIpHistory();
+  
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['ip-info', ip],
     queryFn: () => fetchIpInfo(ip),
     retry: 2,
     retryDelay: 1000,
   });
+
+  // Ajouter à l'historique quand les données sont chargées
+  useEffect(() => {
+    if (data && data.query) {
+      addToHistory(data.query, data.city, data.country);
+    }
+  }, [data]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  };
 
   if (isLoading) {
     return (
@@ -58,6 +76,13 @@ export function IpInfo({ ip }: { ip: string | null }) {
         <p className="text-destructive">
           Erreur: {error instanceof Error ? error.message : 'Impossible de récupérer les informations IP'}
         </p>
+        <button 
+          onClick={handleRefresh}
+          className="mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -68,11 +93,22 @@ export function IpInfo({ ip }: { ip: string | null }) {
 
   return (
     <div className="space-y-6">
+      {/* Carte principale avec les informations IP */}
       <div className="rounded-lg border bg-card p-6 shadow-lg">
-        <h2 className="mb-4 text-2xl font-bold flex items-center gap-2">
-          <Network className="h-6 w-6" />
-          Informations IP
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Network className="h-6 w-6" />
+            Informations IP
+          </h2>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Actualiser
+          </button>
+        </div>
         
         <div className="grid gap-4 md:grid-cols-2">
           {/* Adresse IP */}
@@ -149,16 +185,111 @@ export function IpInfo({ ip }: { ip: string | null }) {
         )}
       </div>
 
-      {/* Carte (optionnel - pourrait être ajoutée plus tard) */}
+      {/* Informations techniques supplémentaires */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Carte de sécurité */}
+        <div className="rounded-lg border bg-card p-6">
+          <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Informations de Sécurité
+          </h3>
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Type de connexion</p>
+              <p className="font-semibold">
+                {data.isp?.toLowerCase().includes('mobile') ? 'Mobile' : 'Fixe'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Proxy détecté</p>
+              <p className="font-semibold text-green-600">Non</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Carte réseau */}
+        <div className="rounded-lg border bg-card p-6">
+          <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
+            <Server className="h-5 w-5" />
+            Détails Réseau
+          </h3>
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Numéro AS</p>
+              <p className="font-mono text-sm">{data.as?.split(' ')[0] || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Nom AS</p>
+              <p className="text-sm font-semibold">
+                {data.as?.split(' ').slice(1).join(' ') || 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Carte avec localisation */}
       <div className="rounded-lg border bg-card p-6">
-        <h3 className="mb-2 text-lg font-semibold">Carte</h3>
-        <p className="text-sm text-muted-foreground">
-          Position approximative: {data.city}, {data.country}
-        </p>
-        <div className="mt-4 h-64 rounded-lg bg-muted flex items-center justify-center">
-          <p className="text-muted-foreground">
-            Carte interactive (peut être ajoutée avec Leaflet ou Google Maps)
-          </p>
+        <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
+          <MapPin className="h-5 w-5" />
+          Localisation Géographique
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Pays</p>
+              <p className="font-semibold text-lg">
+                {data.country} ({data.countryCode})
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Région / État</p>
+              <p className="font-semibold">
+                {data.regionName} ({data.region})
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Ville</p>
+              <p className="font-semibold">{data.city}</p>
+            </div>
+          </div>
+          <div className="h-64 rounded-lg bg-muted flex flex-col items-center justify-center">
+            <Globe className="h-16 w-16 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground text-center">
+              Lat: {data.lat?.toFixed(4)}, Lon: {data.lon?.toFixed(4)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Carte interactive disponible prochainement
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Informations supplémentaires */}
+      <div className="rounded-lg border bg-card p-6">
+        <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
+          <Hash className="h-5 w-5" />
+          Informations Détaillées
+        </h3>
+        <div className="grid gap-2 text-sm">
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Adresse IP complète</span>
+            <span className="font-mono font-semibold">{data.query}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Organisation</span>
+            <span className="font-semibold text-right">{data.org}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Fuseau horaire</span>
+            <span className="font-semibold">{data.timezone}</span>
+          </div>
+          <div className="flex justify-between py-2">
+            <span className="text-muted-foreground">Heure locale estimée</span>
+            <span className="font-semibold">
+              {new Date().toLocaleString('fr-FR', { timeZone: data.timezone })}
+            </span>
+          </div>
         </div>
       </div>
     </div>
