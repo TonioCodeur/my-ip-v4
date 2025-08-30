@@ -1,9 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, MapPin, Globe, Network, Wifi, Building2, Clock, RefreshCw, Shield, Server, Hash } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Building2, Clock, Globe, Hash, Loader2, MapPin, Network, RefreshCw, Server, Shield, Wifi } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useIpHistory } from './ip-history';
+import { Button } from './ui/button';
 
 interface IpApiResponse {
   status: string;
@@ -76,13 +77,13 @@ export function IpInfo({ ip }: { ip: string | null }) {
         <p className="text-destructive">
           Erreur: {error instanceof Error ? error.message : 'Impossible de récupérer les informations IP'}
         </p>
-        <button 
+        <Button 
           onClick={handleRefresh}
           className="mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
         >
           <RefreshCw className="h-4 w-4" />
           Réessayer
-        </button>
+        </Button>
       </div>
     );
   }
@@ -223,6 +224,22 @@ export function IpInfo({ ip }: { ip: string | null }) {
               <p className="text-sm font-semibold">
                 {data.as?.split(' ').slice(1).join(' ') || 'N/A'}
               </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Pays</p>
+              <p className="font-semibold text-lg">
+                {data.country} ({data.countryCode})
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Région / État</p>
+              <p className="font-semibold">
+                {data.regionName} ({data.region})
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Ville</p>
+              <p className="font-semibold">{data.city}</p>
             </div>
           </div>
         </div>
