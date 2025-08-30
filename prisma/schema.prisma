@@ -13,3 +13,21 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id        String   @id @default(uuid())
+  ipAddress String
+  continent String
+  country   String
+  city      String
+  region    String
+  district  String?
+  zip       String
+  timezone  String
+  latitude  Float
+  longitude Float
+  proxy     Boolean  @default(false)
+  mobile    Boolean  @default(false)
+  hosting   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

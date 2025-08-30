@@ -1,38 +1,27 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-
-function getLocaleFromBrowser(): string {
-  if (typeof window === 'undefined') return 'en'
-  
+async function detectLocaleFromHeaders(): Promise<string> {
+  const headersList = await headers()
+  const acceptLanguage = headersList.get('accept-language')
   const supportedLocales = ['en', 'fr']
-  const languages = navigator.languages || [navigator.language]
   
-  for (const lang of languages) {
-    const locale = lang.split('-')[0]
-    if (supportedLocales.includes(locale)) {
-      return locale
+  if (acceptLanguage) {
+    const languages = acceptLanguage
+      .split(',')
+      .map((lang: string) => lang.split('-')[0].split(';')[0].trim())
+
+    for (const lang of languages) {
+      if (supportedLocales.includes(lang)) {
+        return lang
+      }
     }
   }
   
-  return 'en'
+  return 'en' // default locale
 }
 
-export default function HomePage() {
-  const router = useRouter()
-  
-  useEffect(() => {
-    const locale = getLocaleFromBrowser()
-    router.push(`/${locale}`)
-  }, [router])
-  
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-        <p>Detecting your language...</p>
-      </div>
-    </div>
-  )
+export default async function RootPage() {
+  const locale = await detectLocaleFromHeaders()
+  redirect(`/${locale}`)
 }
