@@ -102,7 +102,7 @@ export function IpInput({ onSearch, currentIp }: IpInputProps) {
 
         {/* Exemples d'IPs */}
         <div>
-          <p className="text-sm text-muted-foreground mb-2">Exemples d'adresses IP :</p>
+          <p className="text-sm text-muted-foreground mb-2">Exemples d&apos;adresses IP :</p>
           <div className="flex flex-wrap gap-2">
             {exampleIps.map((example) => (
               <button
