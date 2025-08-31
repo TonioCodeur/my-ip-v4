@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     }
     
     // En développement, utiliser une IP de test si aucune IP n'est trouvée
-    if (!ip && process.env.NODE_ENV === 'development') {
-      ip = '8.8.8.8'; // IP de Google DNS pour les tests
+    if (!ip || process.env.NODE_ENV === 'development') {
+      ip = '92.135.20.92'; // IP de Google DNS pour les tests
     }
     
     if (!ip) {

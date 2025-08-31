@@ -32,7 +32,9 @@ async function fetchIpInfo(ip: string | null): Promise<IpApiResponse> {
   const response = await fetch(endpoint);
   
   if (!response.ok) {
-    throw new Error('Erreur lors de la récupération des informations IP');
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || `Erreur ${response.status}: ${response.statusText}`;
+    throw new Error(errorMessage);
   }
   
   return response.json();
