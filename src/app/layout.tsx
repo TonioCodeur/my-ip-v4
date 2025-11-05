@@ -1,4 +1,3 @@
-import { ModeToggle } from "@/components/mode-toggle";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -36,9 +35,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <div className="fixed top-4 right-4">
-            <ModeToggle />
-          </div>
         </ThemeProvider>
       </body>
     </html>

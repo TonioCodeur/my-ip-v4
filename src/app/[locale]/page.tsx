@@ -19,10 +19,10 @@ export default async function Home({
       <div className="z-10 max-w-7xl w-full">
         <div className="mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            {t('hello')} - Analyseur d&apos;IP
+            {t('hello')} - {t('app.title')}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {t('welcome')}
+            {t('app.description')}
           </p>
         </div>
         
