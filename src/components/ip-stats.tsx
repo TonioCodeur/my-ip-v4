@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, Users, Globe2, Activity } from 'lucide-react';
+import { useI18n } from '../../locales/client';
 
 interface IpStats {
   totalQueries: number;
@@ -22,6 +23,7 @@ async function fetchIpStats(): Promise<IpStats> {
 }
 
 export function IpStats() {
+  const t = useI18n();
   const { data, isLoading } = useQuery({
     queryKey: ['ip-stats'],
     queryFn: fetchIpStats,
@@ -34,28 +36,28 @@ export function IpStats() {
 
   const stats = [
     {
-      label: 'Requêtes totales',
+      label: t('ipStats.totalQueries'),
       value: data.totalQueries.toLocaleString('fr-FR'),
       icon: TrendingUp,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      label: 'Pays uniques',
+      label: t('ipStats.uniqueCountries'),
       value: data.uniqueCountries.toString(),
       icon: Globe2,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      label: 'Temps de réponse',
+      label: t('ipStats.responseTime'),
       value: `${data.averageResponseTime.toFixed(0)}ms`,
       icon: Activity,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
     },
     {
-      label: 'Utilisateurs actifs',
+      label: t('ipStats.activeUsers'),
       value: Math.floor(Math.random() * 100 + 10).toString(),
       icon: Users,
       color: 'text-orange-600',

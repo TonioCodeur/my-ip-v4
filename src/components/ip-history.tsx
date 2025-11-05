@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Clock, Trash2, MapPin } from 'lucide-react';
+import { useI18n } from '../../locales/client';
 
 interface IpHistoryItem {
   ip: string;
@@ -15,6 +16,7 @@ interface IpHistoryProps {
 }
 
 export function IpHistory({ onSelectIp }: IpHistoryProps) {
+  const t = useI18n();
   const [history, setHistory] = useState<IpHistoryItem[]>([]);
 
   useEffect(() => {
@@ -51,14 +53,14 @@ export function IpHistory({ onSelectIp }: IpHistoryProps) {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          Historique des recherches
+          {t('ipHistory.title')}
         </h3>
         <button
           onClick={clearHistory}
           className="text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
         >
           <Trash2 className="h-4 w-4" />
-          Effacer tout
+          {t('ipHistory.clearAll')}
         </button>
       </div>
 

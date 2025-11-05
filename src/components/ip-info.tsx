@@ -5,6 +5,7 @@ import { Building2, Clock, Globe, Hash, Loader2, MapPin, Network, RefreshCw, Ser
 import { useEffect, useState } from 'react';
 import { useIpHistory } from './ip-history';
 import { Button } from './ui/button';
+import { useI18n } from '../../locales/client';
 
 interface IpApiResponse {
   status: string;
@@ -41,6 +42,7 @@ async function fetchIpInfo(ip: string | null): Promise<IpApiResponse> {
 }
 
 export function IpInfo({ ip }: { ip: string | null }) {
+  const t = useI18n();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { addToHistory } = useIpHistory();
   
@@ -68,7 +70,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Chargement des informations IP...</span>
+        <span className="ml-2">{t('ipInfo.loading')}</span>
       </div>
     );
   }
@@ -77,14 +79,14 @@ export function IpInfo({ ip }: { ip: string | null }) {
     return (
       <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
         <p className="text-destructive">
-          Erreur: {error instanceof Error ? error.message : 'Impossible de récupérer les informations IP'}
+          {t('ipInfo.error')} {error instanceof Error ? error.message : t('ipInfo.errorMessage')}
         </p>
-        <Button 
+        <Button
           onClick={handleRefresh}
           className="mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
         >
           <RefreshCw className="h-4 w-4" />
-          Réessayer
+          {t('ipInfo.retry')}
         </Button>
       </div>
     );
@@ -101,7 +103,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Network className="h-6 w-6" />
-            Informations IP
+            {t('ipInfo.title')}
           </h2>
           <button
             onClick={handleRefresh}
@@ -109,7 +111,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Actualiser
+            {t('ipInfo.refresh')}
           </button>
         </div>
         
@@ -118,8 +120,8 @@ export function IpInfo({ ip }: { ip: string | null }) {
           <div className="flex items-start gap-3">
             <Wifi className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Adresse IP</p>
-              <p className="font-mono font-semibold">{data.query || ip || 'Non disponible'}</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.ipAddress')}</p>
+              <p className="font-mono font-semibold">{data.query || ip || t('ipInfo.notAvailable')}</p>
             </div>
           </div>
 
@@ -127,7 +129,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
           <div className="flex items-start gap-3">
             <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Localisation</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.location')}</p>
               <p className="font-semibold">
                 {data.city}, {data.regionName}
               </p>
@@ -141,7 +143,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
           <div className="flex items-start gap-3">
             <Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Coordonnées</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.coordinates')}</p>
               <p className="font-mono text-sm">
                 Lat: {data.lat?.toFixed(4)}, Lon: {data.lon?.toFixed(4)}
               </p>
@@ -152,7 +154,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
           <div className="flex items-start gap-3">
             <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Fuseau horaire</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.timezone')}</p>
               <p className="font-semibold">{data.timezone}</p>
             </div>
           </div>
@@ -161,7 +163,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
           <div className="flex items-start gap-3">
             <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Fournisseur Internet (FAI)</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.isp')}</p>
               <p className="font-semibold">{data.isp}</p>
               <p className="text-sm text-muted-foreground">{data.org}</p>
             </div>
@@ -171,7 +173,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
           <div className="flex items-start gap-3">
             <Network className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Système Autonome (AS)</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.as')}</p>
               <p className="font-mono text-sm">{data.as}</p>
             </div>
           </div>
@@ -181,7 +183,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
         {data.zip && (
           <div className="mt-4 pt-4 border-t">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Code postal:</span>
+              <span className="text-sm text-muted-foreground">{t('ipInfo.zipCode')}</span>
               <span className="font-semibold">{data.zip}</span>
             </div>
           </div>
@@ -194,18 +196,18 @@ export function IpInfo({ ip }: { ip: string | null }) {
         <div className="rounded-lg border bg-card p-6">
           <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Informations de Sécurité
+            {t('ipInfo.securityInfo')}
           </h3>
           <div className="space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Type de connexion</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.connectionType')}</p>
               <p className="font-semibold">
-                {data.isp?.toLowerCase().includes('mobile') ? 'Mobile' : 'Fixe'}
+                {data.isp?.toLowerCase().includes('mobile') ? t('ipInfo.mobile') : t('ipInfo.fixed')}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Proxy détecté</p>
-              <p className="font-semibold text-green-600">Non</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.proxyDetected')}</p>
+              <p className="font-semibold text-green-600">{t('ipInfo.no')}</p>
             </div>
           </div>
         </div>
@@ -214,33 +216,33 @@ export function IpInfo({ ip }: { ip: string | null }) {
         <div className="rounded-lg border bg-card p-6">
           <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
             <Server className="h-5 w-5" />
-            Détails Réseau
+            {t('ipInfo.networkDetails')}
           </h3>
           <div className="space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Numéro AS</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.asNumber')}</p>
               <p className="font-mono text-sm">{data.as?.split(' ')[0] || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Nom AS</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.asName')}</p>
               <p className="text-sm font-semibold">
                 {data.as?.split(' ').slice(1).join(' ') || 'N/A'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Pays</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.country')}</p>
               <p className="font-semibold text-lg">
                 {data.country} ({data.countryCode})
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Région / État</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.regionState')}</p>
               <p className="font-semibold">
                 {data.regionName} ({data.region})
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Ville</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.city')}</p>
               <p className="font-semibold">{data.city}</p>
             </div>
           </div>
@@ -251,24 +253,24 @@ export function IpInfo({ ip }: { ip: string | null }) {
       <div className="rounded-lg border bg-card p-6">
         <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
           <MapPin className="h-5 w-5" />
-          Localisation Géographique
+          {t('ipInfo.geographicLocation')}
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Pays</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.country')}</p>
               <p className="font-semibold text-lg">
                 {data.country} ({data.countryCode})
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Région / État</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.regionState')}</p>
               <p className="font-semibold">
                 {data.regionName} ({data.region})
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Ville</p>
+              <p className="text-sm text-muted-foreground">{t('ipInfo.city')}</p>
               <p className="font-semibold">{data.city}</p>
             </div>
           </div>
@@ -278,7 +280,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
               Lat: {data.lat?.toFixed(4)}, Lon: {data.lon?.toFixed(4)}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              Carte interactive disponible prochainement
+              {t('ipInfo.mapAvailable')}
             </p>
           </div>
         </div>
@@ -288,23 +290,23 @@ export function IpInfo({ ip }: { ip: string | null }) {
       <div className="rounded-lg border bg-card p-6">
         <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
           <Hash className="h-5 w-5" />
-          Informations Détaillées
+          {t('ipInfo.detailedInfo')}
         </h3>
         <div className="grid gap-2 text-sm">
           <div className="flex justify-between py-2 border-b">
-            <span className="text-muted-foreground">Adresse IP complète</span>
+            <span className="text-muted-foreground">{t('ipInfo.fullIpAddress')}</span>
             <span className="font-mono font-semibold">{data.query}</span>
           </div>
           <div className="flex justify-between py-2 border-b">
-            <span className="text-muted-foreground">Organisation</span>
+            <span className="text-muted-foreground">{t('ipInfo.organization')}</span>
             <span className="font-semibold text-right">{data.org}</span>
           </div>
           <div className="flex justify-between py-2 border-b">
-            <span className="text-muted-foreground">Fuseau horaire</span>
+            <span className="text-muted-foreground">{t('ipInfo.timezone')}</span>
             <span className="font-semibold">{data.timezone}</span>
           </div>
           <div className="flex justify-between py-2">
-            <span className="text-muted-foreground">Heure locale estimée</span>
+            <span className="text-muted-foreground">{t('ipInfo.estimatedLocalTime')}</span>
             <span className="font-semibold">
               {new Date().toLocaleString('fr-FR', { timeZone: data.timezone })}
             </span>

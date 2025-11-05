@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Globe, RefreshCcw } from 'lucide-react';
+import { useI18n } from '../../locales/client';
 
 interface IpInputProps {
   onSearch: (ip: string) => void;
@@ -9,6 +10,7 @@ interface IpInputProps {
 }
 
 export function IpInput({ onSearch, currentIp }: IpInputProps) {
+  const t = useI18n();
   const [inputValue, setInputValue] = useState('');
   const [isValid, setIsValid] = useState(true);
 
@@ -45,9 +47,9 @@ export function IpInput({ onSearch, currentIp }: IpInputProps) {
 
   // Exemples d'IPs pour tester
   const exampleIps = [
-    { label: 'Google DNS', ip: '8.8.8.8' },
-    { label: 'Cloudflare', ip: '1.1.1.1' },
-    { label: 'OpenDNS', ip: '208.67.222.222' },
+    { label: t('ipInput.googleDns'), ip: '8.8.8.8' },
+    { label: t('ipInput.cloudflare'), ip: '1.1.1.1' },
+    { label: t('ipInput.openDns'), ip: '208.67.222.222' },
   ];
 
   const handleExampleClick = (ip: string) => {
@@ -60,9 +62,9 @@ export function IpInput({ onSearch, currentIp }: IpInputProps) {
     <div className="rounded-lg border bg-card p-6 shadow-lg">
       <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
         <Search className="h-5 w-5" />
-        Rechercher une adresse IP
+        {t('ipInput.title')}
       </h3>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <div className="flex gap-2">
@@ -70,10 +72,10 @@ export function IpInput({ onSearch, currentIp }: IpInputProps) {
               type="text"
               value={inputValue}
               onChange={handleInputChange}
-              placeholder="Entrez une adresse IP (ex: 8.8.8.8)"
+              placeholder={t('ipInput.placeholder')}
               className={`flex-1 px-4 py-2 border rounded-md bg-background transition-colors ${
-                !isValid 
-                  ? 'border-destructive focus:ring-destructive' 
+                !isValid
+                  ? 'border-destructive focus:ring-destructive'
                   : 'border-input focus:ring-primary'
               } focus:outline-none focus:ring-2`}
             />
@@ -82,7 +84,7 @@ export function IpInput({ onSearch, currentIp }: IpInputProps) {
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
             >
               <Search className="h-4 w-4" />
-              Rechercher
+              {t('ipInput.search')}
             </button>
             <button
               type="button"
@@ -90,19 +92,19 @@ export function IpInput({ onSearch, currentIp }: IpInputProps) {
               className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors flex items-center gap-2"
             >
               <RefreshCcw className="h-4 w-4" />
-              Mon IP
+              {t('ipInput.myIp')}
             </button>
           </div>
           {!isValid && (
             <p className="mt-2 text-sm text-destructive">
-              Veuillez entrer une adresse IP valide
+              {t('ipInput.invalidIp')}
             </p>
           )}
         </div>
 
         {/* Exemples d'IPs */}
         <div>
-          <p className="text-sm text-muted-foreground mb-2">Exemples d&apos;adresses IP :</p>
+          <p className="text-sm text-muted-foreground mb-2">{t('ipInput.examples')}</p>
           <div className="flex flex-wrap gap-2">
             {exampleIps.map((example) => (
               <button
@@ -121,7 +123,7 @@ export function IpInput({ onSearch, currentIp }: IpInputProps) {
           <div className="pt-2 border-t">
             <p className="text-sm text-muted-foreground flex items-center gap-2">
               <Globe className="h-4 w-4" />
-              Votre IP actuelle : <span className="font-mono font-semibold">{currentIp}</span>
+              {t('ipInput.currentIp')} <span className="font-mono font-semibold">{currentIp}</span>
             </p>
           </div>
         )}
