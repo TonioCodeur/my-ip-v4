@@ -25,8 +25,9 @@ interface IpApiResponse {
 
 export async function saveIpInfo(ip?: string) {
   try {
-    // En développement sans IP fournie, utiliser une IP de test
-    const targetIp = ip || (process.env.NODE_ENV === 'development' ? '8.8.8.8' : undefined);
+    // En développement sans IP fournie, utiliser une IP de test publique valide
+    const targetIp =
+      ip || (process.env.NODE_ENV === "development" ? "8.8.8.8" : undefined);
 
     if (!targetIp) {
       throw new Error("Aucune IP fournie");
@@ -49,6 +50,25 @@ export async function saveIpInfo(ip?: string) {
 
     if (data.status === "fail") {
       throw new Error("Impossible de récupérer les informations pour cette IP");
+    }
+
+    // Vérifier si cette IP existe déjà dans les dernières 24h (éviter les doublons)
+    const recentVisit = await prisma.user.findFirst({
+      where: {
+        ipAddress: data.query,
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Dernières 24h
+        },
+      },
+    });
+
+    if (recentVisit) {
+      console.log(`IP ${data.query} déjà enregistrée récemment, skip insertion`);
+      return {
+        success: true,
+        data: recentVisit,
+        skipped: true,
+      };
     }
 
     // Mapper les données de l'API au schéma Prisma

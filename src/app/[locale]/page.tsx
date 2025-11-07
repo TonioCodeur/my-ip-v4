@@ -1,8 +1,8 @@
+import { saveIpInfo } from "@/actions/save-ip-info";
 import { IpDashboard } from "@/components/ip-dashboard";
 import { getUserIp } from "@/lib/get-user-ip";
 import { setStaticParamsLocale } from "next-international/server";
 import { getI18n } from "../../../locales/server";
-import { saveIpInfo } from "@/actions/save-ip-info";
 
 export default async function Home({
   params,
