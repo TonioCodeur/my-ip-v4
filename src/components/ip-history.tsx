@@ -27,12 +27,6 @@ export function IpHistory({ onSelectIp }: IpHistoryProps) {
     }
   }, []);
 
-  const addToHistory = (item: IpHistoryItem) => {
-    const newHistory = [item, ...history.filter(h => h.ip !== item.ip)].slice(0, 10);
-    setHistory(newHistory);
-    localStorage.setItem('ip-history', JSON.stringify(newHistory));
-  };
-
   const clearHistory = () => {
     setHistory([]);
     localStorage.removeItem('ip-history');

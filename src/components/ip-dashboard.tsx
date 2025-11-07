@@ -11,7 +11,7 @@ interface IpDashboardProps {
 }
 
 export function IpDashboard({ initialIp }: IpDashboardProps) {
-  const [currentIp, setCurrentIp] = useState<string | null>(initialIp);
+  const [currentIp] = useState<string | null>(initialIp);
   const [searchedIp, setSearchedIp] = useState<string | null>(initialIp);
 
   const handleIpSearch = (ip: string) => {

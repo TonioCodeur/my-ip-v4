@@ -26,7 +26,7 @@ interface IpApiResponse {
 export async function saveIpInfo(ip?: string) {
   try {
     // En développement sans IP fournie, utiliser une IP de test publique valide
-    let targetIp =
+    const targetIp =
       ip || (process.env.NODE_ENV === "development" ? "8.8.8.8" : undefined);
 
     // En production, si aucune IP n'est fournie, on ne peut pas continuer

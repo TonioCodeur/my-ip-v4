@@ -58,7 +58,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
     if (data && data.query) {
       addToHistory(data.query, data.city, data.country);
     }
-  }, [data]);
+  }, [data, addToHistory]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
