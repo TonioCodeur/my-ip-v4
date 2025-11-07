@@ -17,9 +17,12 @@ export default async function Home({
 
   // Stocker automatiquement l'IP de l'utilisateur en base de données
   if (userIp) {
-    saveIpInfo(userIp).catch((error) => {
-      console.error("Erreur lors de la sauvegarde de l'IP:", error);
-    });
+    const result = await saveIpInfo(userIp);
+    if (!result.success) {
+      console.error("Erreur lors de la sauvegarde de l'IP:", result.error);
+    } else {
+      console.log("IP sauvegardée avec succès:", result.data?.id);
+    }
   }
 
   return (

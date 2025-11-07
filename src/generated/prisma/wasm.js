@@ -141,7 +141,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\sandbox\\my-ip-v4\\src\\generated\\prisma",
+      "value": "c:\\sandbox\\my-ip-v4\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -155,11 +155,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\sandbox\\my-ip-v4\\prisma\\schema.prisma",
+    "sourceFilePath": "c:\\sandbox\\my-ip-v4\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": "../../../.env",
+    "rootEnvPath": null,
     "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
