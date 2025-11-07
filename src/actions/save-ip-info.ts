@@ -25,19 +25,17 @@ interface IpApiResponse {
 
 export async function saveIpInfo(ip?: string) {
   try {
-    // Construire l'URL de l'API interne
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000");
-    const apiUrl = new URL("/api/ip-info", baseUrl);
-    if (ip) {
-      apiUrl.searchParams.set("ip", ip);
+    // En développement sans IP fournie, utiliser une IP de test
+    const targetIp = ip || (process.env.NODE_ENV === 'development' ? '8.8.8.8' : undefined);
+
+    if (!targetIp) {
+      throw new Error("Aucune IP fournie");
     }
 
-    // Fetch les données IP depuis l'API interne
-    const response = await fetch(apiUrl.toString(), {
+    // Appeler directement l'API ip-api.com (évite les problèmes de port/URL)
+    const apiUrl = `http://ip-api.com/json/${targetIp}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
+
+    const response = await fetch(apiUrl, {
       cache: "no-store",
     });
 
