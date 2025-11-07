@@ -15,6 +15,11 @@ interface IpApiResponse {
   org: string;
   as: string;
   query: string;
+  continent: string;
+  continentCode: string;
+  proxy: boolean;
+  mobile: boolean;
+  hosting: boolean;
 }
 
 export async function GET(request: NextRequest) {
@@ -47,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Appeler l'API IP-API.com
-    const apiUrl = `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`;
+    const apiUrl = `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
     
     const response = await fetch(apiUrl, {
       next: { revalidate: 3600 }, // Cache pour 1 heure

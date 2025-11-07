@@ -2,6 +2,7 @@ import { IpDashboard } from "@/components/ip-dashboard";
 import { getUserIp } from "@/lib/get-user-ip";
 import { setStaticParamsLocale } from "next-international/server";
 import { getI18n } from "../../../locales/server";
+import { saveIpInfo } from "@/actions/save-ip-info";
 
 export default async function Home({
   params,
@@ -13,6 +14,13 @@ export default async function Home({
 
   const t = await getI18n();
   const userIp = await getUserIp();
+
+  // Stocker automatiquement l'IP de l'utilisateur en base de données
+  if (userIp) {
+    saveIpInfo(userIp).catch((error) => {
+      console.error("Erreur lors de la sauvegarde de l'IP:", error);
+    });
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 md:p-8">
