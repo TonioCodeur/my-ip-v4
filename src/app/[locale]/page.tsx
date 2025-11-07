@@ -16,13 +16,18 @@ export default async function Home({
   const userIp = await getUserIp();
 
   // Stocker automatiquement l'IP de l'utilisateur en base de données
-  if (userIp) {
-    const result = await saveIpInfo(userIp);
+  // Note: en production, utiliser l'API Vercel pour obtenir l'IP si getUserIp retourne null
+  try {
+    const result = await saveIpInfo(userIp || undefined);
     if (!result.success) {
-      console.error("Erreur lors de la sauvegarde de l'IP:", result.error);
+      console.error("❌ Erreur lors de la sauvegarde de l'IP:", result.error);
+    } else if (result.skipped) {
+      console.log("⏭️ IP déjà enregistrée récemment:", result.data?.ipAddress);
     } else {
-      console.log("IP sauvegardée avec succès:", result.data?.id);
+      console.log("✅ IP sauvegardée avec succès:", result.data?.id, result.data?.ipAddress);
     }
+  } catch (error) {
+    console.error("❌ Exception lors de la sauvegarde:", error);
   }
 
   return (

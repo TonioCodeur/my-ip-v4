@@ -26,11 +26,17 @@ interface IpApiResponse {
 export async function saveIpInfo(ip?: string) {
   try {
     // En développement sans IP fournie, utiliser une IP de test publique valide
-    const targetIp =
+    let targetIp =
       ip || (process.env.NODE_ENV === "development" ? "8.8.8.8" : undefined);
 
+    // En production, si aucune IP n'est fournie, on ne peut pas continuer
+    // L'IP doit être capturée côté serveur via les headers
     if (!targetIp) {
-      throw new Error("Aucune IP fournie");
+      console.error("⚠️ Aucune IP fournie en production. Vérifier les headers.");
+      return {
+        success: false,
+        error: "Aucune IP fournie - headers manquants",
+      };
     }
 
     // Appeler directement l'API ip-api.com (évite les problèmes de port/URL)
