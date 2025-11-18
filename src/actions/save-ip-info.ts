@@ -25,9 +25,25 @@ interface IpApiResponse {
 
 export async function saveIpInfo(ip?: string) {
   try {
-    // En développement sans IP fournie, utiliser une IP de test publique valide
-    const targetIp =
-      ip || (process.env.NODE_ENV === "development" ? "8.8.8.8" : undefined);
+    let targetIp = ip;
+
+    // Filtrer les IPs locales/privées en développement
+    const isLocalIp = (ipAddr: string | undefined) => {
+      if (!ipAddr) return true;
+      return (
+        ipAddr === "::1" ||
+        ipAddr === "127.0.0.1" ||
+        ipAddr.startsWith("192.168.") ||
+        ipAddr.startsWith("10.") ||
+        ipAddr.startsWith("172.16.")
+      );
+    };
+
+    // En développement avec IP locale, utiliser une IP de test publique valide
+    if (process.env.NODE_ENV === "development" && isLocalIp(targetIp)) {
+      console.log("🔄 IP locale détectée en dev, utilisation de l'IP de test 8.8.8.8");
+      targetIp = "8.8.8.8";
+    }
 
     // En production, si aucune IP n'est fournie, on ne peut pas continuer
     // L'IP doit être capturée côté serveur via les headers
