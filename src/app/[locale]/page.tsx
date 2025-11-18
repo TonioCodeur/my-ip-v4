@@ -4,6 +4,10 @@ import { getUserIp } from "@/lib/get-user-ip";
 import { setStaticParamsLocale } from "next-international/server";
 import { getI18n } from "../../../locales/server";
 
+// Force cette page à être dynamique pour avoir accès aux headers en production
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function Home({
   params,
 }: {
@@ -15,19 +19,21 @@ export default async function Home({
   const t = await getI18n();
   const userIp = await getUserIp();
 
+  console.log(`[Page Home] Locale: ${locale}, IP détectée: ${userIp || 'null'}, NODE_ENV: ${process.env.NODE_ENV}`);
+
   // Stocker automatiquement l'IP de l'utilisateur en base de données
-  // Note: en production, utiliser l'API Vercel pour obtenir l'IP si getUserIp retourne null
+  // En production, Vercel fournira automatiquement l'IP via les headers (x-forwarded-for)
   try {
     const result = await saveIpInfo(userIp || undefined);
     if (!result.success) {
-      console.error("❌ Erreur lors de la sauvegarde de l'IP:", result.error);
+      console.error("[Page Home] ❌ Erreur lors de la sauvegarde de l'IP:", result.error);
     } else if (result.skipped) {
-      console.log("⏭️ IP déjà enregistrée récemment:", result.data?.ipAddress);
+      console.log("[Page Home] ⏭️ IP déjà enregistrée récemment:", result.data?.ipAddress);
     } else {
-      console.log("✅ IP sauvegardée avec succès:", result.data?.id, result.data?.ipAddress);
+      console.log("[Page Home] ✅ IP sauvegardée avec succès:", result.data?.id, result.data?.ipAddress);
     }
   } catch (error) {
-    console.error("❌ Exception lors de la sauvegarde:", error);
+    console.error("[Page Home] ❌ Exception lors de la sauvegarde:", error);
   }
 
   return (

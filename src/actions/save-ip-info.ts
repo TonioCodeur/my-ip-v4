@@ -25,9 +25,11 @@ interface IpApiResponse {
 
 export async function saveIpInfo(ip?: string) {
   try {
+    console.log(`[saveIpInfo] Démarrage - IP reçue: ${ip}, NODE_ENV: ${process.env.NODE_ENV}`);
+
     let targetIp = ip;
 
-    // Filtrer les IPs locales/privées en développement
+    // Filtrer les IPs locales/privées
     const isLocalIp = (ipAddr: string | undefined) => {
       if (!ipAddr) return true;
       return (
@@ -45,36 +47,47 @@ export async function saveIpInfo(ip?: string) {
       targetIp = "8.8.8.8";
     }
 
-    // En production, si aucune IP n'est fournie, on ne peut pas continuer
-    // L'IP doit être capturée côté serveur via les headers
+    // En production avec IP locale (cas anormal), logger mais continuer avec l'IP
+    if (process.env.NODE_ENV === "production" && targetIp && isLocalIp(targetIp)) {
+      console.warn(`⚠️ IP locale détectée en production: ${targetIp} - Cela ne devrait pas arriver!`);
+    }
+
+    // Si aucune IP n'est fournie, on ne peut pas continuer
     if (!targetIp) {
-      console.error("⚠️ Aucune IP fournie en production. Vérifier les headers.");
+      const errorMsg = `❌ Aucune IP fournie. NODE_ENV: ${process.env.NODE_ENV}`;
+      console.error(errorMsg);
       return {
         success: false,
         error: "Aucune IP fournie - headers manquants",
       };
     }
 
+    console.log(`[saveIpInfo] IP cible finale: ${targetIp}`);
+
     // Appeler directement l'API ip-api.com (évite les problèmes de port/URL)
     const apiUrl = `http://ip-api.com/json/${targetIp}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
 
+    console.log(`[saveIpInfo] Appel API ip-api.com pour IP: ${targetIp}`);
     const response = await fetch(apiUrl, {
       cache: "no-store",
     });
 
     if (!response.ok) {
-      throw new Error(
-        `Erreur lors de la récupération des données IP: ${response.statusText}`
-      );
+      const error = `Erreur API (${response.status}): ${response.statusText}`;
+      console.error(`[saveIpInfo] ${error}`);
+      throw new Error(`Erreur lors de la récupération des données IP: ${response.statusText}`);
     }
 
     const data: IpApiResponse = await response.json();
+    console.log(`[saveIpInfo] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`);
 
     if (data.status === "fail") {
+      console.error(`[saveIpInfo] API a retourné 'fail' pour IP: ${targetIp}`);
       throw new Error("Impossible de récupérer les informations pour cette IP");
     }
 
     // Vérifier si cette IP existe déjà dans les dernières 24h (éviter les doublons)
+    console.log(`[saveIpInfo] Vérification des doublons pour IP: ${data.query}`);
     const recentVisit = await prisma.user.findFirst({
       where: {
         ipAddress: data.query,
@@ -85,7 +98,7 @@ export async function saveIpInfo(ip?: string) {
     });
 
     if (recentVisit) {
-      console.log(`IP ${data.query} déjà enregistrée récemment, skip insertion`);
+      console.log(`[saveIpInfo] ⏭️ IP ${data.query} déjà enregistrée récemment (ID: ${recentVisit.id}), skip insertion`);
       return {
         success: true,
         data: recentVisit,
@@ -94,6 +107,7 @@ export async function saveIpInfo(ip?: string) {
     }
 
     // Mapper les données de l'API au schéma Prisma
+    console.log(`[saveIpInfo] 💾 Création du record en DB pour IP: ${data.query}`);
     const userRecord = await prisma.user.create({
       data: {
         ipAddress: data.query,
@@ -112,12 +126,17 @@ export async function saveIpInfo(ip?: string) {
       },
     });
 
+    console.log(`[saveIpInfo] ✅ Record créé avec succès - ID: ${userRecord.id}, IP: ${userRecord.ipAddress}`);
     return {
       success: true,
       data: userRecord,
     };
   } catch (error) {
-    console.error("Erreur lors de la sauvegarde des informations IP:", error);
+    console.error("[saveIpInfo] ❌ Erreur lors de la sauvegarde:", error);
+    if (error instanceof Error) {
+      console.error("[saveIpInfo] Message d'erreur:", error.message);
+      console.error("[saveIpInfo] Stack trace:", error.stack);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erreur inconnue",
