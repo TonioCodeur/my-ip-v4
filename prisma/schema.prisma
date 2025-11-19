@@ -12,6 +12,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Pour Vercel, utiliser directUrl si disponible (connection pooling)
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model User {

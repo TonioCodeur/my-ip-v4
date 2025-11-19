@@ -1,16 +1,26 @@
 import { PrismaClient } from "../generated/prisma";
 
 const globalForPrisma = global as unknown as {
-  prisma: PrismaClient;
+  prisma: PrismaClient | undefined;
 };
 
-// Créer une instance Prisma standard sans extension Accelerate
-// L'extension Accelerate nécessite une configuration spéciale et peut empêcher les insertions
+// Configuration optimisée pour Vercel serverless
+// Utilise connection pooling pour éviter les "too many connections"
 const prisma =
-  globalForPrisma.prisma || new PrismaClient({
+  globalForPrisma.prisma ||
+  new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// En production sur Vercel, on ne met PAS en cache dans global
+// car les fonctions serverless sont éphémères
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
 
 export default prisma;

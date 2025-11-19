@@ -1,0 +1,20 @@
+# Fichiers de développement
+.env.local
+.env*.local
+*.log
+
+# Scripts de test
+scripts/
+
+# Documentation
+*.md
+!README.md
+
+# Tests
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/
+
+# Git
+.git/
+.gitignore
