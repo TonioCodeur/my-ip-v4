@@ -23,48 +23,46 @@ interface IpApiResponse {
   hosting?: boolean;
 }
 
+// Helper pour vérifier si une IP est locale/privée
+function isLocalIp(ip: string): boolean {
+  return (
+    ip === '::1' ||
+    ip === '127.0.0.1' ||
+    ip.startsWith('192.168.') ||
+    ip.startsWith('10.') ||
+    ip.startsWith('172.16.') ||
+    ip.startsWith('172.17.') ||
+    ip.startsWith('172.18.') ||
+    ip.startsWith('172.19.') ||
+    ip.startsWith('172.2') ||
+    ip.startsWith('172.30.') ||
+    ip.startsWith('172.31.')
+  );
+}
+
 export async function saveIpInfo(ip?: string) {
   try {
-    console.log(`[saveIpInfo] Démarrage - IP reçue: ${ip}, NODE_ENV: ${process.env.NODE_ENV}`);
-
-    let targetIp = ip;
-
-    // Filtrer les IPs locales/privées
-    const isLocalIp = (ipAddr: string | undefined) => {
-      if (!ipAddr) return true;
-      return (
-        ipAddr === "::1" ||
-        ipAddr === "127.0.0.1" ||
-        ipAddr.startsWith("192.168.") ||
-        ipAddr.startsWith("10.") ||
-        ipAddr.startsWith("172.16.")
-      );
-    };
-
-    // En développement avec IP locale, utiliser une IP de test publique valide
-    if (process.env.NODE_ENV === "development" && isLocalIp(targetIp)) {
-      console.log("🔄 IP locale détectée en dev, utilisation de l'IP de test 8.8.8.8");
-      targetIp = "8.8.8.8";
-    }
-
-    // En production avec IP locale (cas anormal), logger mais continuer avec l'IP
-    if (process.env.NODE_ENV === "production" && targetIp && isLocalIp(targetIp)) {
-      console.warn(`⚠️ IP locale détectée en production: ${targetIp} - Cela ne devrait pas arriver!`);
-    }
+    console.log(`[saveIpInfo] Démarrage - IP reçue: ${ip}`);
 
     // Si aucune IP n'est fournie, on ne peut pas continuer
-    if (!targetIp) {
-      const errorMsg = `❌ Aucune IP fournie. NODE_ENV: ${process.env.NODE_ENV}`;
-      console.error(errorMsg);
+    if (!ip) {
+      console.error("[saveIpInfo] ❌ Aucune IP fournie");
       return {
         success: false,
         error: "Aucune IP fournie - headers manquants",
       };
     }
 
-    console.log(`[saveIpInfo] IP cible finale: ${targetIp}`);
+    // Si l'IP est locale, utiliser une IP de test pour la géolocalisation
+    let targetIp = ip;
+    if (isLocalIp(ip)) {
+      targetIp = "8.8.8.8"; // IP de test Google DNS
+      console.log(`[saveIpInfo] 🔄 IP locale détectée (${ip}), utilisation de l'IP de test ${targetIp}`);
+    }
 
-    // Appeler directement l'API ip-api.com (évite les problèmes de port/URL)
+    console.log(`[saveIpInfo] Traitement de l'IP: ${targetIp}`);
+
+    // Appeler directement l'API ip-api.com
     const apiUrl = `http://ip-api.com/json/${targetIp}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
 
     console.log(`[saveIpInfo] Appel API ip-api.com pour IP: ${targetIp}`);
@@ -82,15 +80,16 @@ export async function saveIpInfo(ip?: string) {
     console.log(`[saveIpInfo] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`);
 
     if (data.status === "fail") {
-      console.error(`[saveIpInfo] API a retourné 'fail' pour IP: ${targetIp}`);
+      console.error(`[saveIpInfo] API a retourné 'fail' pour IP: ${ip}`);
       throw new Error("Impossible de récupérer les informations pour cette IP");
     }
 
     // Vérifier si cette IP existe déjà dans les dernières 24h (éviter les doublons)
-    console.log(`[saveIpInfo] Vérification des doublons pour IP: ${data.query}`);
+    // Important: On vérifie avec l'IP ORIGINALE de l'utilisateur, pas l'IP de test
+    console.log(`[saveIpInfo] Vérification des doublons pour IP: ${ip}`);
     const recentVisit = await prisma.user.findFirst({
       where: {
-        ipAddress: data.query,
+        ipAddress: ip,
         createdAt: {
           gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Dernières 24h
         },
@@ -98,7 +97,7 @@ export async function saveIpInfo(ip?: string) {
     });
 
     if (recentVisit) {
-      console.log(`[saveIpInfo] ⏭️ IP ${data.query} déjà enregistrée récemment (ID: ${recentVisit.id}), skip insertion`);
+      console.log(`[saveIpInfo] ⏭️ IP ${ip} déjà enregistrée récemment (ID: ${recentVisit.id}), skip insertion`);
       return {
         success: true,
         data: recentVisit,
@@ -107,10 +106,11 @@ export async function saveIpInfo(ip?: string) {
     }
 
     // Mapper les données de l'API au schéma Prisma
-    console.log(`[saveIpInfo] 💾 Création du record en DB pour IP: ${data.query}`);
+    // Important: On stocke l'IP ORIGINALE de l'utilisateur, mais avec les données géographiques de l'IP de test
+    console.log(`[saveIpInfo] 💾 Création du record en DB pour IP originale: ${ip} (géoloc de ${targetIp})`);
     const userRecord = await prisma.user.create({
       data: {
-        ipAddress: data.query,
+        ipAddress: ip, // IP ORIGINALE de l'utilisateur
         continent: data.continent || data.countryCode, // Fallback si continent non disponible
         country: data.country,
         city: data.city,

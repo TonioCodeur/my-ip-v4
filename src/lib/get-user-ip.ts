@@ -35,15 +35,9 @@ export async function getUserIp(): Promise<string | null> {
     return remoteAddr;
   }
 
-  // En développement, retourner une IP de test
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[getUserIp] 🔧 Mode dev - utilisation de l\'IP de test 8.8.8.8');
-    return '8.8.8.8'; // IP de Google DNS pour les tests
-  }
-
-  // En production, si aucun header n'est trouvé, c'est un problème
+  // Aucune IP trouvée
   const availableHeaders = Array.from(headersList.keys()).join(', ');
-  console.error('[getUserIp] ⚠️ AUCUN header IP trouvé en production!');
+  console.error('[getUserIp] ⚠️ AUCUN header IP trouvé!');
   console.error('[getUserIp] Headers disponibles:', availableHeaders);
 
   return null;
