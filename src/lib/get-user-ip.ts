@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { getPublicIp } from './get-public-ip';
 
 export async function getUserIp(): Promise<string | null> {
   const headersList = await headers();
@@ -35,10 +36,21 @@ export async function getUserIp(): Promise<string | null> {
     return remoteAddr;
   }
 
-  // Aucune IP trouvée
+  // Aucune IP trouvée dans les headers
   const availableHeaders = Array.from(headersList.keys()).join(', ');
-  console.error('[getUserIp] ⚠️ AUCUN header IP trouvé!');
-  console.error('[getUserIp] Headers disponibles:', availableHeaders);
+  console.log('[getUserIp] ⚠️ Aucun header IP trouvé');
+  console.log('[getUserIp] Headers disponibles:', availableHeaders);
 
+  // En dernier recours, obtenir l'IP publique via un service externe
+  // Cela arrive typiquement en développement local
+  console.log('[getUserIp] 🔄 Tentative de récupération de l\'IP publique...');
+  const publicIp = await getPublicIp();
+
+  if (publicIp) {
+    console.log('[getUserIp] ✅ IP publique de la machine:', publicIp);
+    return publicIp;
+  }
+
+  console.error('[getUserIp] ❌ Impossible de déterminer l\'IP');
   return null;
 }
