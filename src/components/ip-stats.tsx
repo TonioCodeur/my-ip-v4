@@ -8,18 +8,25 @@ interface IpStats {
   totalQueries: number;
   uniqueCountries: number;
   averageResponseTime: number;
+  activeUsers: number;
   lastUpdated: string;
 }
 
-// Fonction simulée pour obtenir des statistiques
+/**
+ * Récupère les statistiques réelles depuis l'API
+ * Connecté à la base de données via server action
+ */
 async function fetchIpStats(): Promise<IpStats> {
-  // Dans un cas réel, cela ferait un appel API
-  return {
-    totalQueries: Math.floor(Math.random() * 10000) + 1000,
-    uniqueCountries: Math.floor(Math.random() * 195) + 1,
-    averageResponseTime: Math.random() * 500 + 100,
-    lastUpdated: new Date().toISOString(),
-  };
+  const response = await fetch('/api/stats', {
+    method: 'GET',
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch IP statistics');
+  }
+
+  return response.json();
 }
 
 export function IpStats() {
@@ -58,7 +65,7 @@ export function IpStats() {
     },
     {
       label: t('ipStats.activeUsers'),
-      value: Math.floor(Math.random() * 100 + 10).toString(),
+      value: data.activeUsers.toString(),
       icon: Users,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
