@@ -107,24 +107,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Sauvegarder les informations IP en base de données de manière asynchrone
-    // On passe les données pour éviter un double appel à l'API
-    const savePromise = saveIpInfo(ip, data);
+    // Sauvegarder les informations IP en base de données
+    // IMPORTANT: En environnement serverless (Vercel), il FAUT await la sauvegarde
+    // sinon la fonction retourne et le contexte d'exécution est terminé avant la fin de la sauvegarde
+    console.log(`[API /ip-info] Sauvegarde en DB pour IP: ${ip}`);
+    const saveResult = await saveIpInfo(ip, data);
 
-    // Logger le résultat de la sauvegarde sans bloquer la réponse
-    savePromise.then((result) => {
-      if (result.success) {
-        if (result.skipped) {
-          console.log(`[API /ip-info] ⏭️ Sauvegarde skippée - IP déjà enregistrée: ${ip}`);
-        } else {
-          console.log(`[API /ip-info] ✅ IP sauvegardée avec succès: ${ip} (ID: ${result.data?.id})`);
-        }
+    if (saveResult.success) {
+      if (saveResult.skipped) {
+        console.log(`[API /ip-info] ⏭️ IP déjà enregistrée récemment: ${ip}`);
       } else {
-        console.error(`[API /ip-info] ❌ Erreur sauvegarde DB: ${result.error}`);
+        console.log(`[API /ip-info] ✅ IP sauvegardée avec succès: ${ip} (ID: ${saveResult.data?.id})`);
       }
-    }).catch((error) => {
-      console.error('[API /ip-info] ❌ Exception lors de la sauvegarde:', error);
-    });
+    } else {
+      console.error(`[API /ip-info] ❌ Erreur sauvegarde DB: ${saveResult.error}`);
+    }
 
     const duration = Date.now() - startTime;
     console.log(`[API /ip-info] ✅ Requête terminée en ${duration}ms pour IP: ${ip}`);
