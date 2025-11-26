@@ -2,7 +2,7 @@ import { setStaticParamsLocale } from "next-international/server";
 import { getI18n } from "../../../../locales/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default async function TermsPage({
   params,

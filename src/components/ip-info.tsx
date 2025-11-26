@@ -91,7 +91,7 @@ export function IpInfo({ ip }: { ip: string | null }) {
     if (!isLoading && data && currentSearchIpRef.current === ip) {
       toast.success(t('toast.search.success'), {
         id: 'ip-search',
-        description: t('toast.search.successDescription').replace('{ip}', data.query),
+        description: `${t('toast.search.successDescriptionPrefix')}${data.query}${t('toast.search.successDescriptionSuffix')}`,
       });
       currentSearchIpRef.current = null;
     }

@@ -101,7 +101,8 @@ export default {
   // Toast notifications
   "toast.search.loading": "Searching...",
   "toast.search.success": "IP information retrieved successfully",
-  "toast.search.successDescription": "Data for {ip} has been loaded",
+  "toast.search.successDescriptionPrefix": "Data for ",
+  "toast.search.successDescriptionSuffix": " has been loaded",
   "toast.search.error": "Search error",
   "toast.search.errorDescription": "Unable to retrieve information for this IP",
 } as const;
