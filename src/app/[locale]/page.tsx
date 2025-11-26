@@ -38,7 +38,7 @@ export default async function Home({
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 md:p-8">
-      <div className="z-10 max-w-7xl w-full">
+      <div className="z-10 max-w-7xl w-full flex-1">
         <div className="mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             {t("app.title")}
@@ -50,6 +50,17 @@ export default async function Home({
 
         <IpDashboard initialIp={userIp} />
       </div>
+
+      <footer className="mt-12 py-6 border-t w-full max-w-7xl">
+        <div className="text-center text-sm text-muted-foreground">
+          <a
+            href={`/${locale}/terms`}
+            className="hover:text-primary transition-colors underline-offset-4 hover:underline"
+          >
+            {t("footer.terms")}
+          </a>
+        </div>
+      </footer>
     </main>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Building2, Clock, Globe, Hash, Loader2, MapPin, Network, RefreshCw, Server, Shield, Wifi } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useIpHistory } from './ip-history';
 import { Button } from './ui/button';
 import { useI18n } from '../../locales/client';
@@ -45,7 +46,9 @@ export function IpInfo({ ip }: { ip: string | null }) {
   const t = useI18n();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { addToHistory } = useIpHistory();
-  
+  const isFirstRenderRef = useRef(true);
+  const currentSearchIpRef = useRef<string | null>(null);
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['ip-info', ip],
     queryFn: () => fetchIpInfo(ip),
@@ -59,6 +62,49 @@ export function IpInfo({ ip }: { ip: string | null }) {
       addToHistory(data.query, data.city, data.country);
     }
   }, [data, addToHistory]);
+
+  // Afficher un toast de chargement au début d'une nouvelle recherche
+  useEffect(() => {
+    // Skip le premier rendu
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+
+    // Nouvelle recherche détectée
+    if (isLoading) {
+      currentSearchIpRef.current = ip;
+      toast.loading(t('toast.search.loading'), {
+        id: 'ip-search',
+      });
+    }
+  }, [ip, isLoading, t]);
+
+  // Afficher le toast de succès ou d'erreur
+  useEffect(() => {
+    // Ne rien faire si pas de recherche en cours ou si c'est le premier rendu
+    if (isFirstRenderRef.current || !currentSearchIpRef.current) {
+      return;
+    }
+
+    // Toast de succès
+    if (!isLoading && data && currentSearchIpRef.current === ip) {
+      toast.success(t('toast.search.success'), {
+        id: 'ip-search',
+        description: t('toast.search.successDescription').replace('{ip}', data.query),
+      });
+      currentSearchIpRef.current = null;
+    }
+
+    // Toast d'erreur
+    if (!isLoading && error && currentSearchIpRef.current === ip) {
+      toast.error(t('toast.search.error'), {
+        id: 'ip-search',
+        description: t('toast.search.errorDescription'),
+      });
+      currentSearchIpRef.current = null;
+    }
+  }, [ip, isLoading, data, error, t]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
