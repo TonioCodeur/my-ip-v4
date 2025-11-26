@@ -24,6 +24,8 @@ interface IpApiResponse {
 }
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
   try {
     // Récupérer l'IP depuis les paramètres de requête ou utiliser l'IP du client
     const searchParams = request.nextUrl.searchParams;
@@ -34,23 +36,30 @@ export async function GET(request: NextRequest) {
 
     if (!ip) {
       // Essayer différentes méthodes pour obtenir l'IP du client
-      ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-           request.headers.get('x-real-ip') ||
-           request.headers.get('x-remote-addr') ||
-           null;
+      const forwardedFor = request.headers.get('x-forwarded-for');
+      const realIp = request.headers.get('x-real-ip');
+      const remoteAddr = request.headers.get('x-remote-addr');
+
+      ip = forwardedFor?.split(',')[0].trim() || realIp || remoteAddr || null;
+
+      console.log('[API /ip-info] Headers:', {
+        forwardedFor,
+        realIp,
+        remoteAddr,
+        resolved: ip
+      });
     }
 
-    // En développement, utiliser une IP de test si aucune IP n'est trouvée
+    // Si toujours pas d'IP, retourner une erreur
     if (!ip) {
-      if (process.env.NODE_ENV === 'development') {
-        ip = '92.135.20.92'; // IP de test pour le développement
-      } else {
-        return NextResponse.json(
-          { error: 'Impossible de déterminer l\'adresse IP' },
-          { status: 400 }
-        );
-      }
+      console.error('[API /ip-info] ❌ Impossible de déterminer l\'IP - Aucun header trouvé');
+      return NextResponse.json(
+        { error: 'Impossible de déterminer l\'adresse IP' },
+        { status: 400 }
+      );
     }
+
+    console.log(`[API /ip-info] Requête pour IP: ${ip} (param: ${!!ipParam})`);
 
     // Appeler l'API IP-API.com
     const apiUrl = `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
@@ -61,6 +70,8 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
+      console.error(`[API /ip-info] ❌ Erreur API externe - Status: ${response.status}`);
+
       // 502 Bad Gateway : L'API externe a renvoyé une erreur
       if (response.status >= 500) {
         return NextResponse.json(
@@ -85,24 +96,44 @@ export async function GET(request: NextRequest) {
     }
 
     const data: IpApiResponse = await response.json();
+    console.log(`[API /ip-info] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`);
 
     // Vérifier le statut de la réponse
     if (data.status === 'fail') {
+      console.error(`[API /ip-info] ❌ API a retourné 'fail' pour IP: ${ip}`);
       return NextResponse.json(
         { error: 'Impossible de récupérer les informations pour cette IP' },
         { status: 422 } // 422 Unprocessable Entity : L'IP est valide mais ne peut pas être traitée
       );
     }
 
-    // Sauvegarder les informations IP en base de données (async, ne bloque pas la réponse)
-    saveIpInfo(ip).catch((error) => {
-      console.error('[API /ip-info] Erreur lors de la sauvegarde en DB:', error);
+    // Sauvegarder les informations IP en base de données de manière asynchrone
+    // On passe les données pour éviter un double appel à l'API
+    const savePromise = saveIpInfo(ip, data);
+
+    // Logger le résultat de la sauvegarde sans bloquer la réponse
+    savePromise.then((result) => {
+      if (result.success) {
+        if (result.skipped) {
+          console.log(`[API /ip-info] ⏭️ Sauvegarde skippée - IP déjà enregistrée: ${ip}`);
+        } else {
+          console.log(`[API /ip-info] ✅ IP sauvegardée avec succès: ${ip} (ID: ${result.data?.id})`);
+        }
+      } else {
+        console.error(`[API /ip-info] ❌ Erreur sauvegarde DB: ${result.error}`);
+      }
+    }).catch((error) => {
+      console.error('[API /ip-info] ❌ Exception lors de la sauvegarde:', error);
     });
+
+    const duration = Date.now() - startTime;
+    console.log(`[API /ip-info] ✅ Requête terminée en ${duration}ms pour IP: ${ip}`);
 
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('[API /ip-info] Erreur:', error);
+    const duration = Date.now() - startTime;
+    console.error(`[API /ip-info] ❌ Erreur après ${duration}ms:`, error);
 
     // 504 Gateway Timeout : Timeout lors de l'appel à l'API externe
     if (error instanceof Error && error.name === 'AbortError') {

@@ -19,21 +19,26 @@ export default async function Home({
   const t = await getI18n();
   const userIp = await getUserIp();
 
-  console.log(`[Page Home] Locale: ${locale}, IP détectée: ${userIp || 'null'}, NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`[Page Home] Locale: ${locale}, IP détectée: ${userIp || 'null'}`);
 
   // Stocker automatiquement l'IP de l'utilisateur en base de données
-  // En production, Vercel fournira automatiquement l'IP via les headers (x-forwarded-for)
-  try {
-    const result = await saveIpInfo(userIp || undefined);
-    if (!result.success) {
-      console.error("[Page Home] ❌ Erreur lors de la sauvegarde de l'IP:", result.error);
-    } else if (result.skipped) {
-      console.log("[Page Home] ⏭️ IP déjà enregistrée récemment:", result.data?.ipAddress);
-    } else {
-      console.log("[Page Home] ✅ IP sauvegardée avec succès:", result.data?.id, result.data?.ipAddress);
+  // Cette IP sera aussi affichée comme IP par défaut dans l'interface
+  // Note: Les recherches manuelles d'IP sont sauvegardées par l'API /api/ip-info
+  if (userIp) {
+    try {
+      const result = await saveIpInfo(userIp);
+      if (!result.success) {
+        console.error("[Page Home] ❌ Erreur sauvegarde IP:", result.error);
+      } else if (result.skipped) {
+        console.log("[Page Home] ⏭️ IP déjà enregistrée:", result.data?.ipAddress);
+      } else {
+        console.log("[Page Home] ✅ IP sauvegardée:", result.data?.id, result.data?.ipAddress);
+      }
+    } catch (error) {
+      console.error("[Page Home] ❌ Exception sauvegarde:", error);
     }
-  } catch (error) {
-    console.error("[Page Home] ❌ Exception lors de la sauvegarde:", error);
+  } else {
+    console.warn("[Page Home] ⚠️ Aucune IP détectée - Sauvegarde impossible");
   }
 
   return (

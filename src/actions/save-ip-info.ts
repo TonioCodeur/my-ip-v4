@@ -23,69 +23,61 @@ interface IpApiResponse {
   hosting?: boolean;
 }
 
-// Helper pour vérifier si une IP est locale/privée
-function isLocalIp(ip: string): boolean {
-  return (
-    ip === '::1' ||
-    ip === '127.0.0.1' ||
-    ip.startsWith('192.168.') ||
-    ip.startsWith('10.') ||
-    ip.startsWith('172.16.') ||
-    ip.startsWith('172.17.') ||
-    ip.startsWith('172.18.') ||
-    ip.startsWith('172.19.') ||
-    ip.startsWith('172.2') ||
-    ip.startsWith('172.30.') ||
-    ip.startsWith('172.31.')
-  );
-}
-
-export async function saveIpInfo(ip?: string) {
+/**
+ * Sauvegarde une IP et ses informations de géolocalisation en base de données
+ * @param ip - L'adresse IP à sauvegarder
+ * @param ipData - Les données de géolocalisation (optionnel, sera récupéré de l'API si non fourni)
+ * @returns Résultat de la sauvegarde
+ */
+export async function saveIpInfo(ip?: string, ipData?: IpApiResponse) {
   try {
-    console.log(`[saveIpInfo] Démarrage - IP reçue: ${ip}`);
+    console.log(`[saveIpInfo] Démarrage - IP: ${ip}, Data fournie: ${!!ipData}`);
 
-    // Si aucune IP n'est fournie, on ne peut pas continuer
+    // Validation de l'IP
     if (!ip) {
       console.error("[saveIpInfo] ❌ Aucune IP fournie");
       return {
         success: false,
-        error: "Aucune IP fournie - headers manquants",
+        error: "Aucune IP fournie",
       };
     }
 
-    // Si l'IP est locale, utiliser une IP de test pour la géolocalisation
-    let targetIp = ip;
-    if (isLocalIp(ip)) {
-      targetIp = "8.8.8.8"; // IP de test Google DNS
-      console.log(`[saveIpInfo] 🔄 IP locale détectée (${ip}), utilisation de l'IP de test ${targetIp}`);
-    }
+    // Si les données sont déjà fournies, on ne fait pas d'appel API
+    let data: IpApiResponse;
+    if (ipData) {
+      console.log(`[saveIpInfo] Utilisation des données fournies pour IP: ${ip}`);
+      data = ipData;
+    } else {
+      // Récupérer les données de géolocalisation depuis l'API
+      console.log(`[saveIpInfo] Appel API ip-api.com pour IP: ${ip}`);
+      const apiUrl = `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
 
-    console.log(`[saveIpInfo] Traitement de l'IP: ${targetIp}`);
+      const response = await fetch(apiUrl, {
+        cache: "no-store",
+      });
 
-    // Appeler directement l'API ip-api.com
-    const apiUrl = `http://ip-api.com/json/${targetIp}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
+      if (!response.ok) {
+        const error = `Erreur API (${response.status}): ${response.statusText}`;
+        console.error(`[saveIpInfo] ${error}`);
+        return {
+          success: false,
+          error: `Erreur lors de la récupération des données IP: ${response.statusText}`,
+        };
+      }
 
-    console.log(`[saveIpInfo] Appel API ip-api.com pour IP: ${targetIp}`);
-    const response = await fetch(apiUrl, {
-      cache: "no-store",
-    });
+      data = await response.json();
+      console.log(`[saveIpInfo] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`);
 
-    if (!response.ok) {
-      const error = `Erreur API (${response.status}): ${response.statusText}`;
-      console.error(`[saveIpInfo] ${error}`);
-      throw new Error(`Erreur lors de la récupération des données IP: ${response.statusText}`);
-    }
-
-    const data: IpApiResponse = await response.json();
-    console.log(`[saveIpInfo] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`);
-
-    if (data.status === "fail") {
-      console.error(`[saveIpInfo] API a retourné 'fail' pour IP: ${ip}`);
-      throw new Error("Impossible de récupérer les informations pour cette IP");
+      if (data.status === "fail") {
+        console.error(`[saveIpInfo] API a retourné 'fail' pour IP: ${ip}`);
+        return {
+          success: false,
+          error: "Impossible de récupérer les informations pour cette IP",
+        };
+      }
     }
 
     // Vérifier si cette IP existe déjà dans les dernières 24h (éviter les doublons)
-    // Important: On vérifie avec l'IP ORIGINALE de l'utilisateur, pas l'IP de test
     console.log(`[saveIpInfo] Vérification des doublons pour IP: ${ip}`);
     const recentVisit = await prisma.user.findFirst({
       where: {
@@ -105,18 +97,17 @@ export async function saveIpInfo(ip?: string) {
       };
     }
 
-    // Mapper les données de l'API au schéma Prisma
-    // Important: On stocke l'IP ORIGINALE de l'utilisateur, mais avec les données géographiques de l'IP de test
-    console.log(`[saveIpInfo] 💾 Création du record en DB pour IP originale: ${ip} (géoloc de ${targetIp})`);
+    // Créer le record en DB
+    console.log(`[saveIpInfo] 💾 Création du record en DB pour IP: ${ip}`);
     const userRecord = await prisma.user.create({
       data: {
-        ipAddress: ip, // IP ORIGINALE de l'utilisateur
+        ipAddress: ip,
         continent: data.continent || data.countryCode, // Fallback si continent non disponible
         country: data.country,
         city: data.city,
         region: data.regionName,
         district: data.region, // code région comme district
-        zip: data.zip,
+        zip: data.zip || "N/A", // Certaines IPs n'ont pas de code postal
         timezone: data.timezone,
         latitude: data.lat,
         longitude: data.lon,
@@ -134,12 +125,12 @@ export async function saveIpInfo(ip?: string) {
   } catch (error) {
     console.error("[saveIpInfo] ❌ Erreur lors de la sauvegarde:", error);
     if (error instanceof Error) {
-      console.error("[saveIpInfo] Message d'erreur:", error.message);
-      console.error("[saveIpInfo] Stack trace:", error.stack);
+      console.error("[saveIpInfo] Message:", error.message);
+      console.error("[saveIpInfo] Stack:", error.stack);
     }
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erreur inconnue",
+      error: error instanceof Error ? error.message : "Erreur inconnue lors de la sauvegarde",
     };
   }
 }
