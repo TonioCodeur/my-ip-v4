@@ -39,6 +39,7 @@ export default {
   "ipInfo.fullIpAddress": "Full IP Address",
   "ipInfo.organization": "Organization",
   "ipInfo.estimatedLocalTime": "Estimated Local Time",
+  "ipInfo.viewLargerMap": "View on OpenStreetMap",
 
   // IpInput component
   "ipInput.title": "Search an IP address",
