@@ -1,12 +1,13 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Clock, Globe, Hash, Loader2, MapPin, Network, RefreshCw, Server, Shield, Wifi } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useIpHistory } from './ip-history';
 import { Button } from './ui/button';
 import { useI18n } from '../../locales/client';
+import { saveIpInfo } from '@/actions/save-ip-info';
 
 interface IpApiResponse {
   status: string;
@@ -44,6 +45,7 @@ async function fetchIpInfo(ip: string | null): Promise<IpApiResponse> {
 
 export function IpInfo({ ip }: { ip: string | null }) {
   const t = useI18n();
+  const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { addToHistory } = useIpHistory();
   const isFirstRenderRef = useRef(true);
@@ -56,12 +58,22 @@ export function IpInfo({ ip }: { ip: string | null }) {
     retryDelay: 1000,
   });
 
-  // Ajouter à l'historique quand les données sont chargées
+  // Ajouter à l'historique ET sauvegarder en DB quand les données sont chargées
   useEffect(() => {
     if (data && data.query) {
       addToHistory(data.query, data.city, data.country);
+
+      // Sauvegarder en DB de manière asynchrone sans bloquer l'UI
+      saveIpInfo(data.query, data).then((result) => {
+        if (result.success && !result.skipped) {
+          // Invalider le cache des statistiques pour forcer le rafraîchissement
+          queryClient.invalidateQueries({ queryKey: ['ip-stats'] });
+        }
+      }).catch((error) => {
+        console.error('[IpInfo] Erreur lors de la sauvegarde:', error);
+      });
     }
-  }, [data, addToHistory]);
+  }, [data, addToHistory, queryClient]);
 
   // Afficher un toast de chargement au début d'une nouvelle recherche
   useEffect(() => {

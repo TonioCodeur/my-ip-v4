@@ -34,7 +34,9 @@ export function IpStats() {
   const { data, isLoading } = useQuery({
     queryKey: ['ip-stats'],
     queryFn: fetchIpStats,
-    refetchInterval: 60000, // Rafraîchir toutes les minutes
+    staleTime: 10000, // Données considérées fraîches pendant 10 secondes
+    refetchInterval: 30000, // Rafraîchir toutes les 30 secondes (au lieu de 60)
+    refetchOnWindowFocus: true, // Rafraîchir quand l'utilisateur revient sur l'onglet
   });
 
   if (isLoading || !data) {
