@@ -18,16 +18,16 @@ interface IpApiResponse {
 }
 
 async function fetchIpInfo(ip: string | null): Promise<IpApiResponse> {
-  const endpoint = ip 
-    ? `/api/ip-info?ip=${encodeURIComponent(ip)}` 
+  const endpoint = ip
+    ? `/api/ip-info?ip=${encodeURIComponent(ip)}`
     : '/api/ip-info';
-  
+
   const response = await fetch(endpoint);
-  
+
   if (!response.ok) {
     throw new Error('Erreur lors de la récupération des informations IP');
   }
-  
+
   return response.json();
 }
 

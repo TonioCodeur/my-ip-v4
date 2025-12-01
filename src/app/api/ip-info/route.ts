@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { saveIpInfo } from '@/actions/save-ip-info';
+import { NextRequest, NextResponse } from "next/server";
+import { saveIpInfo } from "@/actions/save-ip-info";
+import { verifyOrigin } from "@/lib/api-auth";
 
 interface IpApiResponse {
   status: string;
@@ -24,37 +25,47 @@ interface IpApiResponse {
 }
 
 export async function GET(request: NextRequest) {
+  // Vérification de l'origine de la requête
+  if (!verifyOrigin(request)) {
+    return NextResponse.json(
+      { error: "Accès refusé - Origine non autorisée" },
+      { status: 403 }
+    );
+  }
+
   const startTime = Date.now();
 
   try {
     // Récupérer l'IP depuis les paramètres de requête ou utiliser l'IP du client
     const searchParams = request.nextUrl.searchParams;
-    const ipParam = searchParams.get('ip');
+    const ipParam = searchParams.get("ip");
 
     // Si pas d'IP fournie, essayer de récupérer l'IP du client
     let ip = ipParam;
 
     if (!ip) {
       // Essayer différentes méthodes pour obtenir l'IP du client
-      const forwardedFor = request.headers.get('x-forwarded-for');
-      const realIp = request.headers.get('x-real-ip');
-      const remoteAddr = request.headers.get('x-remote-addr');
+      const forwardedFor = request.headers.get("x-forwarded-for");
+      const realIp = request.headers.get("x-real-ip");
+      const remoteAddr = request.headers.get("x-remote-addr");
 
-      ip = forwardedFor?.split(',')[0].trim() || realIp || remoteAddr || null;
+      ip = forwardedFor?.split(",")[0].trim() || realIp || remoteAddr || null;
 
-      console.log('[API /ip-info] Headers:', {
+      console.log("[API /ip-info] Headers:", {
         forwardedFor,
         realIp,
         remoteAddr,
-        resolved: ip
+        resolved: ip,
       });
     }
 
     // Si toujours pas d'IP, retourner une erreur
     if (!ip) {
-      console.error('[API /ip-info] ❌ Impossible de déterminer l\'IP - Aucun header trouvé');
+      console.error(
+        "[API /ip-info] ❌ Impossible de déterminer l'IP - Aucun header trouvé"
+      );
       return NextResponse.json(
-        { error: 'Impossible de déterminer l\'adresse IP' },
+        { error: "Impossible de déterminer l'adresse IP" },
         { status: 400 }
       );
     }
@@ -70,12 +81,17 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error(`[API /ip-info] ❌ Erreur API externe - Status: ${response.status}`);
+      console.error(
+        `[API /ip-info] ❌ Erreur API externe - Status: ${response.status}`
+      );
 
       // 502 Bad Gateway : L'API externe a renvoyé une erreur
       if (response.status >= 500) {
         return NextResponse.json(
-          { error: 'Le service de géolocalisation est temporairement indisponible' },
+          {
+            error:
+              "Le service de géolocalisation est temporairement indisponible",
+          },
           { status: 503 }
         );
       }
@@ -83,26 +99,30 @@ export async function GET(request: NextRequest) {
       // 404 si l'API retourne une erreur 404
       if (response.status === 404) {
         return NextResponse.json(
-          { error: 'Adresse IP introuvable' },
+          { error: "Adresse IP introuvable" },
           { status: 404 }
         );
       }
 
       // Autres erreurs de l'API externe
       return NextResponse.json(
-        { error: `Erreur lors de la communication avec le service de géolocalisation: ${response.statusText}` },
+        {
+          error: `Erreur lors de la communication avec le service de géolocalisation: ${response.statusText}`,
+        },
         { status: 502 }
       );
     }
 
     const data: IpApiResponse = await response.json();
-    console.log(`[API /ip-info] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`);
+    console.log(
+      `[API /ip-info] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`
+    );
 
     // Vérifier le statut de la réponse
-    if (data.status === 'fail') {
+    if (data.status === "fail") {
       console.error(`[API /ip-info] ❌ API a retourné 'fail' pour IP: ${ip}`);
       return NextResponse.json(
-        { error: 'Impossible de récupérer les informations pour cette IP' },
+        { error: "Impossible de récupérer les informations pour cette IP" },
         { status: 422 } // 422 Unprocessable Entity : L'IP est valide mais ne peut pas être traitée
       );
     }
@@ -117,32 +137,37 @@ export async function GET(request: NextRequest) {
       if (saveResult.skipped) {
         console.log(`[API /ip-info] ⏭️ IP déjà enregistrée récemment: ${ip}`);
       } else {
-        console.log(`[API /ip-info] ✅ IP sauvegardée avec succès: ${ip} (ID: ${saveResult.data?.id})`);
+        console.log(
+          `[API /ip-info] ✅ IP sauvegardée avec succès: ${ip} (ID: ${saveResult.data?.id})`
+        );
       }
     } else {
-      console.error(`[API /ip-info] ❌ Erreur sauvegarde DB: ${saveResult.error}`);
+      console.error(
+        `[API /ip-info] ❌ Erreur sauvegarde DB: ${saveResult.error}`
+      );
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[API /ip-info] ✅ Requête terminée en ${duration}ms pour IP: ${ip}`);
+    console.log(
+      `[API /ip-info] ✅ Requête terminée en ${duration}ms pour IP: ${ip}`
+    );
 
     return NextResponse.json(data);
-
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error(`[API /ip-info] ❌ Erreur après ${duration}ms:`, error);
 
     // 504 Gateway Timeout : Timeout lors de l'appel à l'API externe
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json(
-        { error: 'Le service de géolocalisation met trop de temps à répondre' },
+        { error: "Le service de géolocalisation met trop de temps à répondre" },
         { status: 504 }
       );
     }
 
     // 500 Internal Server Error : Erreur serveur générique
     return NextResponse.json(
-      { error: 'Erreur serveur lors de la récupération des informations IP' },
+      { error: "Erreur serveur lors de la récupération des informations IP" },
       { status: 500 }
     );
   }
