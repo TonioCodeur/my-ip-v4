@@ -1,27 +1,60 @@
-import { NextRequest, NextResponse } from "next/server";
 import { saveIpInfo } from "@/actions/save-ip-info";
 import { verifyOrigin } from "@/lib/api-auth";
+import { NextRequest, NextResponse } from "next/server";
 
-interface IpApiResponse {
-  status: string;
-  country: string;
-  countryCode: string;
-  region: string;
-  regionName: string;
+interface IpstackResponse {
+  ip: string;
+  type: string;
+  continent_code: string;
+  continent_name: string;
+  country_code: string;
+  country_name: string;
+  region_code: string;
+  region_name: string;
   city: string;
   zip: string;
-  lat: number;
-  lon: number;
-  timezone: string;
-  isp: string;
-  org: string;
-  as: string;
-  query: string;
-  continent: string;
-  continentCode: string;
-  proxy: boolean;
-  mobile: boolean;
-  hosting: boolean;
+  latitude: number;
+  longitude: number;
+  location?: {
+    geoname_id?: number;
+    capital?: string;
+    languages?: Array<{ code: string; name: string; native: string }>;
+    country_flag?: string;
+    country_flag_emoji?: string;
+    calling_code?: string;
+    is_eu?: boolean;
+  };
+  time_zone?: {
+    id?: string;
+    current_time?: string;
+    gmt_offset?: number;
+    code?: string;
+    is_daylight_saving?: boolean;
+  };
+  currency?: {
+    code?: string;
+    name?: string;
+    plural?: string;
+    symbol?: string;
+    symbol_native?: string;
+  };
+  connection?: {
+    asn?: number;
+    isp?: string;
+  };
+  security?: {
+    is_proxy?: boolean;
+    proxy_type?: string | null;
+    is_crawler?: boolean;
+    is_tor?: boolean;
+    threat_level?: string;
+    threat_types?: string[] | null;
+  };
+  error?: {
+    code: number;
+    type: string;
+    info: string;
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -73,7 +106,11 @@ export async function GET(request: NextRequest) {
     console.log(`[API /ip-info] Requête pour IP: ${ip} (param: ${!!ipParam})`);
 
     // Appeler l'API IP-API.com
-    const apiUrl = `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
+    // const apiUrl = `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,continent,continentCode,proxy,mobile,hosting`;
+
+    // Appeler l'API ipstack.com
+    const apiKey = process.env.API_KEY_IPSTACK;
+    const apiUrl = `https://api.ipstack.com/${ip}?access_key=${apiKey}&security=1`;
 
     const response = await fetch(apiUrl, {
       next: { revalidate: 3600 }, // Cache pour 1 heure
@@ -113,19 +150,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data: IpApiResponse = await response.json();
-    console.log(
-      `[API /ip-info] Réponse API reçue - Status: ${data.status}, IP: ${data.query}`
-    );
+    const data: IpstackResponse = await response.json();
 
-    // Vérifier le statut de la réponse
-    if (data.status === "fail") {
-      console.error(`[API /ip-info] ❌ API a retourné 'fail' pour IP: ${ip}`);
+    // Vérifier si l'API a retourné une erreur
+    if (data.error) {
+      console.error(
+        `[API /ip-info] ❌ Erreur ipstack: ${data.error.type} - ${data.error.info}`
+      );
       return NextResponse.json(
-        { error: "Impossible de récupérer les informations pour cette IP" },
+        {
+          error:
+            data.error.info ||
+            "Impossible de récupérer les informations pour cette IP",
+        },
         { status: 422 } // 422 Unprocessable Entity : L'IP est valide mais ne peut pas être traitée
       );
     }
+
+    console.log(
+      `[API /ip-info] Réponse API reçue - IP: ${data.ip}, Pays: ${data.country_name}`
+    );
 
     // Sauvegarder les informations IP en base de données
     // IMPORTANT: En environnement serverless (Vercel), il FAUT await la sauvegarde
