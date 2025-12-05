@@ -1,29 +1,47 @@
-import { NextResponse } from 'next/server';
-import { getUserIp } from '@/lib/get-user-ip';
-import { saveIpInfo } from '@/actions/save-ip-info';
-import prisma from '@/lib/prisma';
+import { saveIpInfo } from "@/actions/save-ip-info";
+import { verifyApiToken } from "@/lib/api-auth";
+import { getUserIp } from "@/lib/get-user-ip";
+import prisma from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Vérification de l'authentification (interne ou externe avec token)
+  const authResult = verifyApiToken(request);
+
+  if (!authResult.isValid) {
+    return NextResponse.json(
+      {
+        error: authResult.isInternal
+          ? "Accès refusé - Origine non autorisée"
+          : "Accès refusé - Token API requis pour les requêtes externes",
+      },
+      { status: authResult.isInternal ? 403 : 401 }
+    );
+  }
+
   const logs: string[] = [];
 
   try {
-    logs.push('🧪 Test de stockage en DB - Démarrage');
+    logs.push("🧪 Test de stockage en DB - Démarrage");
 
     // Test 1: Détection IP
-    logs.push('\n1️⃣  Test getUserIp()');
+    logs.push("\n1️⃣  Test getUserIp()");
     const ip = await getUserIp();
-    logs.push(`   → IP détectée: ${ip || 'null'}`);
+    logs.push(`   → IP détectée: ${ip || "null"}`);
 
     if (!ip) {
-      return NextResponse.json({
-        success: false,
-        error: 'Aucune IP détectée',
-        logs,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Aucune IP détectée",
+          logs,
+        },
+        { status: 400 }
+      );
     }
 
     // Test 2: Sauvegarde en DB
-    logs.push('\n2️⃣  Test saveIpInfo()');
+    logs.push("\n2️⃣  Test saveIpInfo()");
     const result = await saveIpInfo(ip);
     logs.push(`   → Success: ${result.success}`);
     logs.push(`   → Skipped: ${result.skipped || false}`);
@@ -39,25 +57,27 @@ export async function GET() {
     }
 
     // Test 3: Vérification DB
-    logs.push('\n3️⃣  Vérification en DB');
+    logs.push("\n3️⃣  Vérification en DB");
     const dbRecord = await prisma.user.findFirst({
       where: { ipAddress: ip },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (dbRecord) {
-      logs.push(`   → ✅ Trouvé: ${dbRecord.ipAddress} - ${dbRecord.city}, ${dbRecord.country}`);
+      logs.push(
+        `   → ✅ Trouvé: ${dbRecord.ipAddress} - ${dbRecord.city}, ${dbRecord.country}`
+      );
     } else {
       logs.push(`   → ❌ PAS trouvé en DB`);
     }
 
     // Test 4: Statistiques
-    logs.push('\n4️⃣  Statistiques DB');
+    logs.push("\n4️⃣  Statistiques DB");
     const count = await prisma.user.count();
     logs.push(`   → Total enregistrements: ${count}`);
 
     const recent = await prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 3,
     });
 
@@ -66,7 +86,7 @@ export async function GET() {
       logs.push(`      ${i + 1}. ${r.ipAddress} - ${r.city}, ${r.country}`);
     });
 
-    logs.push('\n✅ Test terminé avec succès!');
+    logs.push("\n✅ Test terminé avec succès!");
 
     return NextResponse.json({
       success: true,
@@ -74,16 +94,22 @@ export async function GET() {
       savedData: result.data,
       skipped: result.skipped || false,
       totalRecords: count,
-      logs: logs.join('\n'),
+      logs: logs.join("\n"),
     });
-
   } catch (error) {
-    logs.push(`\n❌ Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    logs.push(
+      `\n❌ Erreur: ${
+        error instanceof Error ? error.message : "Erreur inconnue"
+      }`
+    );
 
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Erreur inconnue',
-      logs: logs.join('\n'),
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Erreur inconnue",
+        logs: logs.join("\n"),
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,7 +1,7 @@
 import { getIpStats } from "@/actions/get-ip-stats";
-import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma";
-import { verifyOrigin } from "@/lib/api-auth";
+import { verifyApiToken } from "@/lib/api-auth";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,11 +13,17 @@ export const revalidate = 0;
  * Cache: 30 secondes pour réduire la charge sur la DB
  */
 export async function GET(request: NextRequest) {
-  // Vérification de l'origine de la requête
-  if (!verifyOrigin(request)) {
+  // Vérification de l'authentification (interne ou externe avec token)
+  const authResult = verifyApiToken(request);
+
+  if (!authResult.isValid) {
     return NextResponse.json(
-      { error: "Accès refusé - Origine non autorisée" },
-      { status: 403 }
+      {
+        error: authResult.isInternal
+          ? "Accès refusé - Origine non autorisée"
+          : "Accès refusé - Token API requis pour les requêtes externes",
+      },
+      { status: authResult.isInternal ? 403 : 401 }
     );
   }
 
