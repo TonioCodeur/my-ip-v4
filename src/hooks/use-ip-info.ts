@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
 interface IpApiResponse {
   status: string;
@@ -20,12 +20,12 @@ interface IpApiResponse {
 async function fetchIpInfo(ip: string | null): Promise<IpApiResponse> {
   const endpoint = ip
     ? `/api/ip-info?ip=${encodeURIComponent(ip)}`
-    : '/api/ip-info';
+    : "/api/ip-info";
 
   const response = await fetch(endpoint);
 
   if (!response.ok) {
-    throw new Error('Erreur lors de la récupération des informations IP');
+    throw new Error("Erreur lors de la récupération des informations IP");
   }
 
   return response.json();
@@ -33,7 +33,7 @@ async function fetchIpInfo(ip: string | null): Promise<IpApiResponse> {
 
 export function useIpInfo(ip: string | null) {
   return useQuery({
-    queryKey: ['ip-info', ip],
+    queryKey: ["ip-info", ip],
     queryFn: () => fetchIpInfo(ip),
     retry: 2,
     retryDelay: 1000,

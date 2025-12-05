@@ -1,5 +1,5 @@
 import { saveIpInfo } from "@/actions/save-ip-info";
-import { verifyOrigin } from "@/lib/api-auth";
+import { verifyApiToken } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 interface IpstackResponse {
@@ -108,11 +108,17 @@ function convertToLegacyFormat(data: IpstackResponse): LegacyIpApiResponse {
 }
 
 export async function GET(request: NextRequest) {
-  // Vérification de l'origine de la requête
-  if (!verifyOrigin(request)) {
+  // Vérification de l'authentification (interne ou externe avec token)
+  const authResult = verifyApiToken(request);
+
+  if (!authResult.isValid) {
     return NextResponse.json(
-      { error: "Accès refusé - Origine non autorisée" },
-      { status: 403 }
+      {
+        error: authResult.isInternal
+          ? "Accès refusé - Origine non autorisée"
+          : "Accès refusé - Token API requis pour les requêtes externes",
+      },
+      { status: authResult.isInternal ? 403 : 401 }
     );
   }
 
