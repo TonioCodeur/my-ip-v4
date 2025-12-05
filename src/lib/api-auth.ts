@@ -33,15 +33,7 @@ export function verifyOrigin(request: Request): boolean {
     }
   }
 
-  // Si pas d'origin ni de referer (requête directe depuis le serveur ou curl)
-  // on accepte quand même pour permettre SSR et tests
-  if (!origin && !referer) {
-    console.warn(
-      "[API Auth] Requête sans origin ni referer - Probablement SSR ou test"
-    );
-    return true;
-  }
-
+  // Requêtes sans origin ni referer sont rejetées (sécurité)
   console.error("[API Auth] Origine non autorisée:", { origin, referer, host });
   return false;
 }
@@ -74,7 +66,9 @@ export function verifyApiToken(request: Request): {
   }
 
   // Pour les requêtes externes, vérifier le token
-  console.log("[API Auth] Requête externe détectée - Vérification du token requise");
+  console.log(
+    "[API Auth] Requête externe détectée - Vérification du token requise"
+  );
 
   // Si aucun token n'est configuré, refuser les requêtes externes
   if (!apiToken) {
@@ -107,13 +101,16 @@ export function verifyApiToken(request: Request): {
     return { isValid: true, isInternal: false };
   }
 
-  console.error("[API Auth] ❌ Token API invalide ou manquant pour requête externe", {
-    hasAuthHeader: !!authHeader,
-    hasApiTokenHeader: !!apiTokenHeader,
-    origin,
-    referer,
-    host,
-  });
+  console.error(
+    "[API Auth] ❌ Token API invalide ou manquant pour requête externe",
+    {
+      hasAuthHeader: !!authHeader,
+      hasApiTokenHeader: !!apiTokenHeader,
+      origin,
+      referer,
+      host,
+    }
+  );
 
   return {
     isValid: false,
