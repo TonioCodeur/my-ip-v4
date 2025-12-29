@@ -2,7 +2,6 @@
  * Test d'intégration complet simulant un utilisateur qui se connecte
  * Teste toute la chaîne : getUserIp() -> saveIpInfo() -> DB
  */
-import { getUserIp } from "../src/lib/get-user-ip";
 import { saveIpInfo } from "../src/actions/save-ip-info";
 import prisma from "../src/lib/prisma";
 

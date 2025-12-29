@@ -2,7 +2,6 @@
  * Simule exactement le flux de src/app/[locale]/page.tsx
  */
 import { saveIpInfo } from "../src/actions/save-ip-info";
-import { getUserIp } from "../src/lib/get-user-ip";
 import prisma from "../src/lib/prisma";
 
 async function testPageFlow() {

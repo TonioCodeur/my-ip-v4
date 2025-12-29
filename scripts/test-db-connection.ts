@@ -1,5 +1,6 @@
 // Import dynamique pour éviter les erreurs de compilation
-let PrismaClient: any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let PrismaClient: new () => any
 
 async function initPrisma() {
   try {
@@ -12,6 +13,7 @@ async function initPrisma() {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any
 
 async function testDatabaseConnection() {
