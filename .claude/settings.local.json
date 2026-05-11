@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(timeout:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run build)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(npx next:*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(if exist node_modules rmdir /s /q node_modules)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm prisma generate:*)",
+      "Bash(if exist \"src\\generated\\prisma\" rmdir /s /q \"src\\generated\\prisma\")",
+      "Bash(nslookup:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ping:*)",
+      "Bash(test:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm add:*)",
+      "Bash(npm run lint)",
+      "Bash(pnpm dev)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

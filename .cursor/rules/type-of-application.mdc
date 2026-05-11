@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+# Kind of Application
+It is a web application in NextJs that locates ips and stores them in the database (data is collected anonymously)

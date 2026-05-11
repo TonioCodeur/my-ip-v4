@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+# Application structure and how it works
+- This application performs user identification with I18n support. After identification, it makes a fetch request to `/api/ip-info` to retrieve information related to the user's IP address, and another fetch to `/api/stats` to fetch statistical data from the database. The data received from `/api/ip-info` is stored in the database, but only if the user has not connected within the last 24 hours; otherwise, no data is stored. This logic is handled by the `src/actions/save-ip-info.ts` component.
+- The application also includes a search system that allows users to look up information about any IP address. The data obtained from these searches is also stored in the database via the `src/actions/save-ip-info.ts` component.
+- Additionally, the application features a GPS map to visually display the geographic location of the IP address on a map interface.

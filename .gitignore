@@ -42,8 +42,6 @@ next-env.d.ts
 
 
 # cursor
-/.cursor
+
 
 # claude code
-/.claude
-CLAUDE.md 
